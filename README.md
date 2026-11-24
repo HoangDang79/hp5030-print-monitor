@@ -1,7 +1,5 @@
 # HP ENVY 5030 Print Monitor (`hp5030-print-monitor`)
 
-Repository: [https://github.com/HoangDang79/hp5030-print-monitor.git](https://github.com/HoangDang79/hp5030-print-monitor.git)
-
 ---
 
 ## Deutsch
