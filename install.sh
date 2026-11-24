@@ -4,7 +4,7 @@ set -euo pipefail
 echo "Installing HP 5030 Print Monitor for macOS..."
 mkdir -p "$HOME/.local/bin" "$HOME/Library/LaunchAgents"
 
-DETECTED_PRINTER=$(lpstat -p 2>/dev/null | awk '{print $2}' | head -n 1 || true)
+DETECTED_PRINTER=$(lpstat -p 2>/dev/null | awk '{print $2}' | head -n 1 | tr -d "„“\"" || true)
 cp print_monitor.py "$HOME/.local/bin/print_monitor.py"
 
 if [ -n "$DETECTED_PRINTER" ]; then
