@@ -1,6 +1,5 @@
-set msgFile to (POSIX path of (path to home folder)) & ".printer_keepalive_notify.txt"
 try
-    set rawText to read POSIX file msgFile as «class utf8»
+    set rawText to do shell script "cat \"$HOME/.printer_keepalive_notify.txt\""
     set oldDelims to AppleScript's text item delimiters
     set AppleScript's text item delimiters to "|||"
     set parts to text items of rawText
@@ -13,5 +12,5 @@ try
     else
         display notification nBody with title nTitle
     end if
-    delay 1.5
+    delay 1
 end try

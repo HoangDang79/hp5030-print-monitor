@@ -20,6 +20,7 @@ PLIST_PATH="$HOME/.local/bin/HP5030Notifier.app/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.user.hp5030notifier" "$PLIST_PATH" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier string com.user.hp5030notifier" "$PLIST_PATH"
 /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$PLIST_PATH" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :LSUIElement true" "$PLIST_PATH"
 codesign --force --deep --sign - "$HOME/.local/bin/HP5030Notifier.app"
+killall usernoted 2>/dev/null || true
 
 TARGET_PLIST="$HOME/Library/LaunchAgents/com.user.printmonitor.plist"
 sed "s|YOUR_USERNAME|$USER|g" com.user.printmonitor.plist > "$TARGET_PLIST"
