@@ -1,55 +1,40 @@
-# HP ENVY 5030 Print Monitor (macOS)
+# HP ENVY 5030 Print Monitor (`hp5030-print-monitor`)
 
-**[English](#english) | [Deutsch](#deutsch)**
+Repository: [https://github.com/HoangDang79/hp5030-print-monitor.git](https://github.com/HoangDang79/hp5030-print-monitor.git)
 
----
+Hintergrund-Überwachung für den **HP ENVY 5030** (`HP_ENVY_5000_series`) unter macOS, damit der Druckkopf mindestens alle **21 Tage** genutzt wird und nicht eintrocknet.
 
-## English
+## Funktionsweise
 
-A lightweight macOS background service (`launchd` + Python 3 + AppleScript) that monitors printing activity on an **HP ENVY 5030** over Wi-Fi and triggers a native macOS notification after 21 days of inactivity—helping prevent inkjet printhead clogging without wasting ink on automated test prints.
+- Ein `launchd`-Dienst (`com.user.printmonitor`) prüft stündlich im Hintergrund:
+  1. Lokale macOS-Druckaufträge (`lpstat` / CUPS)
+  2. Den Hardware-Seitenzähler des Druckers (IPP / XML)
+- Sobald ein Druck oder Kopiervorgang erkannt wird, startet der 21-Tage-Countdown neu.
+- Nach 21 Tagen ohne Druckaktivität löst das Skript über `~/.local/bin/HP5030Notifier.app` eine macOS-Benachrichtigung aus.
 
-### How It Works
-- **Hybrid Activity Tracking:** Combines local macOS CUPS job history (`lpstat` / `/var/log/cups/page_log`) with direct hardware page-counter queries via **IPP (`ipptool`)** and **HP LEDM XML (`/DevMgmt/ProductUsageDyn.xml`)**. This ensures mobile prints (e.g., Android/iOS) and direct copies on the printer also reset the inactivity timer.
-- **21-Day Inactivity Threshold:** Runs hourly via `launchd` and sends a reminder notification once 21 days pass without any print or copy activity (with a 24-hour cooldown between reminders).
-- **macOS Focus / Do Not Disturb Support:** Uses a minimal, ad-hoc signed AppleScript helper (`HP5030Notifier.app` with `LSUIElement=true`) so notifications integrate cleanly into macOS Notification Center without cluttering the Dock.
+## 1. Benachrichtigungen ansehen & prüfen
 
-### Quick Start (macOS)
-1. Clone this repository and run the setup script:
-~~~bash
-git clone https://github.com/HoangDang79/hp5030-print-monitor.git
-cd hp5030-print-monitor
-./install.sh
-~~~
-2. Open **System Settings → Notifications → HP5030Notifier** and set the alert style to **Banners**.
+- **Banner live testen (ohne auf 21 Tage zu warten):**
+  `printf 'HP 5030 Druckkopf-Erinnerung|||Bitte kurz eine Farbseite drucken.|||sound' > ~/.printer_keepalive_notify.txt && open -W -a ~/.local/bin/HP5030Notifier.app`
+- **Mitteilungszentrale öffnen:** Klicke oben rechts in der Menüleiste auf **Datum & Uhrzeit**, um zugestellte Mitteilungen nachträglich zu sehen.
+- **macOS-Einstellungen für Benachrichtigungen prüfen:** Öffne **Systemeinstellungen -> Mitteilungen -> HP5030Notifier** und stelle sicher, dass **Mitteilungen erlauben** aktiviert und der Stil auf **Banner** gesetzt ist (außerdem darf kein Fokus-Modus wie *Nicht stören* aktiv sein).
 
-### Uninstall
-~~~bash
-launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.user.printmonitor.plist 2>/dev/null || true
-rm -rf ~/Library/LaunchAgents/com.user.printmonitor.plist ~/.local/bin/print_monitor.py ~/.local/bin/HP5030Notifier.app ~/.printer_keepalive* /tmp/com.user.printmonitor.*
-~~~
+## 2. Status & erwartete Meldungen prüfen
 
----
+- **Aktuellen Status, letzten Druck, Seitenzähler und letzte Log-Zeilen anzeigen:**
+  `launchctl list | grep printmonitor || true; echo "=== Letzter Druck ==="; cat ~/.printer_keepalive_last_run 2>/dev/null || echo "noch keiner"; echo "=== Seitenzähler ==="; cat ~/.printer_keepalive_pagecount 2>/dev/null || echo "noch nicht erfasst"; echo "=== Letzte Prüfungen ==="; tail -n 10 ~/.printer_keepalive.log 2>/dev/null || echo "noch kein Log"`
+- **Erwartete Meldungen im Log (`~/.printer_keepalive.log`):**
+  - `[NOCH_NICHT_FAELLIG] ... Verbleibend: ...` – Der 21-Tage-Intervall ist noch nicht abgelaufen; alles im grünen Bereich.
+  - `[ERINNERUNG_GESENDET] ...` – 21 Tage ohne Druck sind erreicht; die Benachrichtigung wurde ausgelöst und der Intervall-Zähler zurückgesetzt.
+  - `[DRUCK_ERKANNT] ...` / Aktualisierter Seitenzähler – Es wurde ein Druck- oder Kopiervorgang registriert.
 
-## Deutsch
+## 3. Löschen / Deinstallieren
 
-Ein schlanker macOS-Hintergrunddienst (`launchd` + Python 3 + AppleScript), der die Druckaktivität eines **HP ENVY 5030** im WLAN überwacht und nach 21 Tagen ohne Druck eine native macOS-Mitteilung auslöst – so trocknet der Tintenstrahldruckkopf nicht ein, ohne unnötig Tinte für automatische Testseiten zu verbrauchen.
+- **Nur den Hintergrunddienst und die installierten Dateien auf dem Mac entfernen (GitHub-Ordner bleibt erhalten):**
+  `launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.user.printmonitor.plist 2>/dev/null || true; rm -f ~/Library/LaunchAgents/com.user.printmonitor.plist ~/.local/bin/print_monitor.py ~/.printer_keepalive.log ~/.printer_keepalive_last_run ~/.printer_keepalive_pagecount ~/.printer_keepalive_notify.txt; rm -rf ~/.local/bin/HP5030Notifier.app`
+- **Optional – auch den lokalen Projektordner löschen:**
+  `rm -rf ~/hp5030-print-monitor`
 
-### Funktionsweise
-- **Kombinierte Aktivitätserkennung:** Verbindet die lokale macOS-Druckhistorie (CUPS via `lpstat` / `/var/log/cups/page_log`) mit direkten Abfragen des Hardware-Seitenzählers über **IPP (`ipptool`)** und **HP LEDM XML (`/DevMgmt/ProductUsageDyn.xml`)**. Dadurch setzen auch Handy-Drucke und Kopien direkt am Gerät den Timer zurück.
-- **21-Tage-Erinnerung:** Prüft stündlich im Hintergrund über `launchd` und erinnert erst nach 21 Tagen Inaktivität (maximal einmal alle 24 Stunden).
-- **Kompatibel mit „Nicht stören“ / Fokus:** Nutzt eine schlanke, signierte AppleScript-Helfer-App (`HP5030Notifier.app` mit `LSUIElement=true`), sodass Mitteilungen ohne Dock-Symbol erscheinen und aktive Fokus-Modi respektieren.
+## Auf GitHub hochladen
 
-### Schnellstart (macOS)
-1. Repository klonen und das Installationsskript ausführen:
-~~~bash
-git clone https://github.com/HoangDang79/hp5030-print-monitor.git
-cd hp5030-print-monitor
-./install.sh
-~~~
-2. Unter **Systemeinstellungen → Mitteilungen → HP5030Notifier** den Hinweisstil auf **Banner** stellen.
-
-### Deinstallation
-~~~bash
-launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.user.printmonitor.plist 2>/dev/null || true
-rm -rf ~/Library/LaunchAgents/com.user.printmonitor.plist ~/.local/bin/print_monitor.py ~/.local/bin/HP5030Notifier.app ~/.printer_keepalive* /tmp/com.user.printmonitor.*
-~~~
+`cd ~/hp5030-print-monitor && git add README.md && git commit -m "Update README with notifications, status checks, and uninstall guide" && git push`
