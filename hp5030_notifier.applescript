@@ -12,5 +12,5 @@ try
     else
         display notification nBody with title nTitle
     end if
-    delay 1
+    delay 1.5
 end try

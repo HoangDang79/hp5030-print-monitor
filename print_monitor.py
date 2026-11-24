@@ -39,7 +39,6 @@ def notify(title: str, message: str, with_sound: bool = True) -> None:
     if NOTIFIER_APP.exists():
         subprocess.run(["/usr/bin/open", "-W", "-a", str(NOTIFIER_APP)], check=False)
 
-
 def send_reminder_if_due(now: datetime, days_since: int) -> None:
     last_rem: datetime | None = None
     if REMINDER_FILE.exists():
